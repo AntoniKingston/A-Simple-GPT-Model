@@ -1,0 +1,16 @@
+torchviz
+torchview
+streamlit
+numpy
+ipykernel
+wonderwords
+matplotlib
+plotly
+altair
+pandas
+scikit-learn
+seaborn
+imblearn
+transformers
+datasets
+evaluate
