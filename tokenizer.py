@@ -28,7 +28,7 @@ def bpe_tokenizer(text: str, num_merges: int, info_interval=0) -> Tuple[Callable
         tokens = _apply_merge(tokens, merge)
 
     # Both initial tokens and those learnt by merges are included in vocab
-    vocab = sorted(list(set(tokens) | set(list(text))))
+    vocab = ["<BOS>", "<EOS>"] + sorted(list(set(tokens) | set(list(text))))
     stoi = {token: i for i, token in enumerate(vocab)}
     itos = {i: token for i, token in enumerate(vocab)}
 

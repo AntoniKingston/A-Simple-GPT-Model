@@ -14,3 +14,5 @@ imblearn
 transformers
 datasets
 evaluate
+dataclasses
+wget
