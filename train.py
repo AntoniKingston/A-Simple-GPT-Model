@@ -15,7 +15,7 @@ class TrainingPipelineConfig:
     gpt_config: SimpleGPTConfig = field(default_factory=SimpleGPTConfig)
     corpus_path: str = "data/mickiewicz_merged.txt"
     model_save_path: str = "models/mickiewicz_model.pt"
-    num_merges: int = 100
+    num_merges: int = 10000
 
 
 
@@ -25,31 +25,47 @@ def calculate_validation_loss(model: SimpleGPT, dataloader: DataLoader, device: 
     loss = 0
     with torch.no_grad():
         for x, y in dataloader:
-            x, y = x.to(device), y.to(device)
-            logits = model(x)
-            B, T, V = logits.shape
-            loss += F.cross_entropy(logits.view(B*T, V), y.view(B*T), aggregation='sum').item()
+            x = x.to(device=device, non_blocking=True)
+            y = y.to(device=device, non_blocking=True)
+
+            with torch.autocast(device_type=device.type, enabled = (device.type == "cuda")):
+                logits = model(x)
+                B, T, V = logits.shape
+                batch_loss = F.cross_entropy(
+                    logits.reshape(B * T, V),
+                    y.reshape(B * T),
+                    reduction="sum",
+                )
+
+            loss += batch_loss.item()
             total += B*T
     model.train()
     return loss / total
 
 def train(model: SimpleGPT, dataset: OneOffDataset, config : SimpleGPTConfig):
     tr_dataset, val_dataset = torch.utils.data.random_split(dataset, [int(len(dataset) * config.tr_val_split), len(dataset) - int(len(dataset) * config.tr_val_split)])
-    tr_dl = DataLoader(tr_dataset, batch_size=config.batch_size)
-    val_dl = DataLoader(val_dataset, batch_size=config.batch_size)
-    optimizer = O.Adam(model.parameters(), lr=config.lr)
     device = config.device
     print(f"Using device: {device}")
+    print(config.batch_size)
+    tr_dl = DataLoader(tr_dataset, batch_size=config.batch_size, pin_memory=(device == torch.device("cuda")))
+    val_dl = DataLoader(val_dataset, batch_size=config.batch_size, pin_memory=(device == torch.device("cuda")))
+    optimizer = O.Adam(model.parameters(), lr=config.lr)
     model.to(device)
     for epoch in range(config.num_epochs):
         train_loss = 0
         total = 0
         for x, y in tr_dl:
-            optimizer.zero_grad()
-            x, y = x.to(device), y.to(device)
-            logits = model(x)
-            B, T, V = logits.shape
-            loss = F.cross_entropy(logits.view(B*T, V), y.view(B*T), aggregation='sum')
+            optimizer.zero_grad(set_to_none=True)
+            x = x.to(device=device, non_blocking=True)
+            y = y.to(device=device, non_blocking=True)
+            with torch.autocast(device_type=device.type, enabled=(device.type == "cuda")):
+                logits = model(x)
+                B, T, V = logits.shape
+                loss = F.cross_entropy(
+                    logits.reshape(B * T, V),
+                    y.reshape(B * T),
+                    reduction="sum",
+                )
             train_loss += loss.item()
             total += B*T
             optimizer.zero_grad()
@@ -64,10 +80,11 @@ def training_pipeline(config: TrainingPipelineConfig=TrainingPipelineConfig(), c
     with open(config.corpus_path, "r") as f:
         text = f.read()
     encode, decode, vocab, merges = bpe_tokenizer(text, config.num_merges)
-    encoded_text = encode(text)
-    dataset = OneOffDataset(encoded_text)
+    encoded_text = torch.tensor(encode(text)).long()
+    dataset = OneOffDataset(encoded_text, config.gpt_config.block_config.context_size)
     config.gpt_config.vocab_size = len(vocab)
     model = SimpleGPT(config.gpt_config)
+    save_model(model, config.gpt_config, vocab, checkpoint_path.split('.')[0] + '_pre.pl', merges)
     train(model, dataset, config.gpt_config)
     save_model(model, config.gpt_config, vocab, checkpoint_path, merges)
 

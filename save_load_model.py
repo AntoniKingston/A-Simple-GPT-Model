@@ -35,4 +35,4 @@ def load_model(checkpoint_path, device=None):
     merges = ckpt.get("bpe_merges")
     encode, decode = _encode_decode_from_vocab_and_merges(vocab, merges)
     # Returning vocab and merges as well so we can later save the loaded model again
-    return model, encode, decode, vocab, merges
+    return model, config, encode, decode, vocab, merges

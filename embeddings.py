@@ -14,9 +14,9 @@ class Embedding(nn.Module):
 class SinusoidalPositionalEmbedding(nn.Module):
     def __init__(self, block_size, embedding_dim):
         super().__init__()
-        self.table = torch.Tensor([[torch.sin(torch.tensor(pos / 10000 ** (2 * i / embedding_dim))) if (i % 2 == 0) else torch.cos(torch.tensor(pos / 10000 ** (2 * i / embedding_dim))) for i in range(embedding_dim)] for pos in range(block_size)])
+        self.register_buffer("table",
+                                          torch.Tensor([[torch.sin(torch.tensor(pos / 10000 ** (2 * i / embedding_dim))) if (i % 2 == 0) else torch.cos(torch.tensor(pos / 10000 ** (2 * i / embedding_dim))) for i in range(embedding_dim)] for pos in range(block_size)]))
     def forward(self, x):
-        x = torch.tensor(x, dtype=torch.long)
-        T = x.shape[0]
+        T = x.shape[-1]
         # Positional encoding is constant across in inputs, it's length just has to mach input's.
         return self.table[:T, :]
