@@ -39,6 +39,7 @@ def train(model: SimpleGPT, dataset: OneOffDataset, config : SimpleGPTConfig):
     val_dl = DataLoader(val_dataset, batch_size=config.batch_size)
     optimizer = O.Adam(model.parameters(), lr=config.lr)
     device = config.device
+    print(f"Using device: {device}")
     model.to(device)
     for epoch in range(config.num_epochs):
         train_loss = 0
