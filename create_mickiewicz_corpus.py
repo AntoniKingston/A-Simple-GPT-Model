@@ -40,8 +40,10 @@ def merge_txt(dir_path, out_name):
     work_sep = "\n\n\n"
     for file_name in os.listdir(dir_path):
         if file_name.endswith(".txt"):
-            with open(dir_path + "/" + file_name, "r") as f:
+            file_path = dir_path + "/" + file_name
+            with open(file_path, "r") as f:
                 out_text += f.read() + work_sep
+            os.remove(file_path)
     out_text = out_text[:-len(work_sep)]
     f = open(out_path, "w")
     f.write(out_text)

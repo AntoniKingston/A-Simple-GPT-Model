@@ -16,19 +16,8 @@ def _apply_merge(tokens: List[str], merge: Merge) -> List[str]:
         # Advance always by 1 since if merge is applied the list gets shortened by 1
         i+=1
     return tokens
-def bpe_tokenizer(text: str, num_merges: int, info_interval=0) -> Tuple[Callable[[str], List[int]], Callable[[List[int]], str], List[str], List[Merge]]:
-    tokens = list(text)
-    merges : List[Merge] = []
 
-    for i in range(num_merges):
-        if info_interval and i % info_interval == 0:
-            print(f"Learnt {i} merges out of {num_merges}")
-        merge = _most_common_consecutive_pair(tokens)
-        merges.append(merge)
-        tokens = _apply_merge(tokens, merge)
-
-    # Both initial tokens and those learnt by merges are included in vocab
-    vocab = ["<BOS>", "<EOS>"] + sorted(list(set(tokens) | set(list(text))))
+def _encode_decode_from_vocab_and_merges(vocab: List[str], merges: List[Merge]) -> Tuple[Callable[[str], List[int]], Callable[[List[int]], str]]:
     stoi = {token: i for i, token in enumerate(vocab)}
     itos = {i: token for i, token in enumerate(vocab)}
 
@@ -40,6 +29,23 @@ def bpe_tokenizer(text: str, num_merges: int, info_interval=0) -> Tuple[Callable
 
     def decode(tokens: List[int]) -> str:
         return "".join([itos[token] for token in tokens])
+    return encode, decode
+def bpe_tokenizer(text: str, num_merges: int, info_interval=100) -> Tuple[Callable[[str], List[int]], Callable[[List[int]], str], List[str], List[Merge]]:
+    tokens = list(text)
+    merges : List[Merge] = []
+
+    for i in range(num_merges):
+        if info_interval and i % info_interval == 0:
+            print(f"Learnt {i} merges out of {num_merges}")
+        merge = _most_common_consecutive_pair(tokens)
+        merges.append(merge)
+        tokens = _apply_merge(tokens, merge)
+
+    # # Both initial tokens and those learnt by merges are included in vocab
+    # vocab = ["<BOS>", "<EOS>"] + sorted(list(set(tokens) | set(list(text))))
+    vocab = sorted(list(set(tokens) | set(list(text))))
+
+    encode, decode = _encode_decode_from_vocab_and_merges(vocab, merges)
 
     return encode, decode, vocab, merges
 
