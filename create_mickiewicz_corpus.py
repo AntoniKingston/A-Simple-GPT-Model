@@ -11,7 +11,7 @@ def check_for_phrase(lines, phrase):
         if phrase in line:
             return i, True
     return -1, False
-def download_single_txt(title, url_prefix="https://wolnelektury.pl/media/book/txt/", file_name_suffix=".txt", data_folder="data/separate_txts"):
+def download_single_txt(title, url_prefix="https://wolnelektury.pl/media/book/txt/", file_name_suffix=".txt", data_folder="corpora/separate_txts"):
     file_name = title + file_name_suffix
     url = url_prefix + file_name
     out_path = os.path.join(data_folder, file_name)
@@ -123,7 +123,7 @@ def scan_html_recursive(title,
                         txt_url_prefix = "https://wolnelektury.pl/media/book/txt/",
                         html_name_suffix = ".html",
                         txt_name_suffix = ".txt",
-                        data_folder = "data",
+                        data_folder = "corpora",
                         txt_folder = "separate_txts",
                         consideration_phrase="l-aside__zbiory",
                         forbidden_phrase = "strong"):
@@ -155,7 +155,7 @@ def scan_html_recursive(title,
 def download_corpus(catalog_url,
                     unwanted_titles,
                     out_name = "mickiewicz_corpus.txt",
-                    download_path = "data",
+                    download_path = "corpora",
                     temp_folder = "separate_txts",
                     html_url_prefix="https://wolnelektury.pl/katalog/lektura/",
                     txt_url_prefix = "https://wolnelektury.pl/media/book/txt/",
@@ -216,14 +216,17 @@ def merge_txt(in_dir_name, out_dir_name, out_file_name, meta_info_sep = "-----",
         if file_name.endswith(".txt"):
             file_path = os.path.join(in_dir_path, file_name)
             with open(file_path, "r") as f:
-                lines = f.readlines()[6:]
+                lines = f.readlines()
                 cur_corpus = "".join(lines).split(meta_info_sep)[0]
-                out_text += (cur_corpus)
+                out_text += ("<BOS>\n" + (cur_corpus.rstrip("\n\r")) + "\n<EOS>\n")
             if remove_after_merge:
                 os.remove(file_path)
     f = open(out_path, "w")
-    f.write(out_text)
+    f.write(out_text.rstrip("\n\r"))
     f.close()
+
+def remove_trailing_endlines(text: str):
+    return text.rstrip("\n\r")
 
 if __name__ == "__main__":
     download_corpus("https://wolnelektury.pl/katalog/autor/adam-mickiewicz/", ['mickiewicius-baltas-karzigys',

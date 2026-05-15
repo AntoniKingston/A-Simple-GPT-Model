@@ -4,16 +4,11 @@ import torch.nn.functional as F
 from dataclasses import dataclass, field
 from embeddings import Embedding, SinusoidalPositionalEmbedding
 from block import BlockConfig, Block
+from typing import List
 @dataclass
 class SimpleGPTConfig:
-    batch_size: int = 8
-    tr_val_split: float = 0.9
     vocab_size: int = 2137
-    lr: float = 1e-4
-    device: str = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    num_epochs: int = 10
-    info_interval: int = 1
-    n_blocks: int = 6
+    n_blocks: int = 16
     block_config: BlockConfig = field(default_factory=BlockConfig)
 
 
@@ -37,8 +32,11 @@ class SimpleGPT(nn.Module):
         return self.lm_head(x)
 
     # This function is not to be working with batches since it is to stop on generating a '<EOS>' token.
-    def generate(self, idx: torch.Tensor, new_tokens = 10, temperature: float = 1.0):
-        for _ in range(new_tokens):
+    def generate(self, idx: List[int], temperature: float = 1.0, max_new_tokens: int = 1000):
+        idx = torch.tensor(idx, dtype=torch.long, device=self.lm_head.weight.device)
+        new_idx = None
+        new_tokens = 0
+        while new_idx != 1:
             cur_idx = idx[max(-self.config.block_config.context_size, -len(idx)):].unsqueeze(0)
             logits = self(cur_idx)
             logits = logits / temperature
@@ -46,4 +44,7 @@ class SimpleGPT(nn.Module):
             probs = F.softmax(logits, dim=-1)
             new_idx = torch.multinomial(probs, 1).squeeze(0)
             idx = torch.cat([idx, new_idx], dim=-1)
-        return idx
+            new_tokens += 1
+            if new_tokens >= max_new_tokens:
+                break
+        return idx[:-1].tolist()

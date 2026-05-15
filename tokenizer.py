@@ -42,8 +42,8 @@ def bpe_tokenizer(text: str, num_merges: int, info_interval=100) -> Tuple[Callab
         tokens = _apply_merge(tokens, merge)
 
     # # Both initial tokens and those learnt by merges are included in vocab
-    # vocab = ["<BOS>", "<EOS>"] + sorted(list(set(tokens) | set(list(text))))
-    vocab = sorted(list(set(tokens) | set(list(text))))
+    vocab = list(dict.fromkeys(["<BOS>", "<EOS>"] + sorted(list(set(tokens) | set(list(text))))))
+    # vocab = sorted(list(set(tokens) | set(list(text))))
 
     encode, decode = _encode_decode_from_vocab_and_merges(vocab, merges)
 
