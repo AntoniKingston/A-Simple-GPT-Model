@@ -106,20 +106,4 @@ Use `generate.ipynb` as the reference workflow. At a high level:
 - `helpers.py` — saving/loading checkpoints
 - (runtime-created) `corpora/`, `tokenizers/`, `encodings/`, `models/`
 
-## Notes / gotchas
-
-- **Artifacts can get big**: `models/` and encoded tensors under `encodings/` can be large. Keep an eye on what you commit.
-- **Notebook-first**: training is primarily notebook-driven right now; `train.py` provides functions but no CLI entrypoint.
-- **`<EOS>` handling**: `SimpleGPT.generate(...)` stops when it samples token id `1`. In this project, `<EOS>` is included in the tokenizer vocab; ensure your tokenizer/vocab ordering is consistent with that assumption (see `tokenizer.py`).
-
-## Roadmap (rough)
-
-- Add a proper PPC download/ingestion pipeline (and clear licensing notes).
-- Standardize naming and versioning for `corpora/`, `tokenizers/`, `encodings/`, and `models/`.
-- Add a small CLI (train/generate) so the project is not notebook-only.
-- Add evaluation and sampling utilities (perplexity, qualitative samples, fixed seeds).
-
-## License
-
-No license file is included yet. If you want this to be reusable by others, add a `LICENSE` (e.g. MIT/Apache-2.0) and document dataset-specific licensing/terms (especially for PPC).
 
