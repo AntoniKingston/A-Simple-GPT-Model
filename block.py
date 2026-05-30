@@ -54,7 +54,7 @@ class MultiHeadAttentionSubBlock(nn.Module):
         B, T, C = x.shape
         query_key_value = self.qkv(x).reshape(B, T, 3, self.config.n_heads, self.config.attention_inner_dim)
         query, key, value = query_key_value.unbind(dim=2)
-        # transpose from (B, T, n_heads, n_embd) to (B, n_heads, T, n_embd) fo attention computation
+        # transpose from (B, T, n_heads, attention_inner_dim) to (B, n_heads, T, attention_inner_dim) fo attention computation
         query = query.transpose(-2, -3)
         key = key.transpose(-2, -3)
         value = value.transpose(-2, -3)
@@ -64,9 +64,9 @@ class MultiHeadAttentionSubBlock(nn.Module):
         attention = self.dropout(attention)
         stacked_attention = (
             (attention @ value)
-            .transpose(1, 2)
+            .transpose(1, 2) # back to (B, T, n_heads, attention_inner_dim)
             .contiguous()
-            .view(B, T, self.config.attention_inner_dim * self.config.n_heads)
+            .view(B, T, self.config.attention_inner_dim * self.config.n_heads) #so now stacking attention heads works fine
         )
         projection = self.projection(stacked_attention)
 
